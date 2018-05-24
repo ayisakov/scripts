@@ -1,0 +1,4 @@
+#!/usr/bin/env zsh
+
+# Start a tabbed zathura instance
+tabbed -c zathura $1 -e

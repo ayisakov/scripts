@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+OPT="m"
+if [ "$1" == "f" ]
+then
+    OPT="u"
+fi
+
+
+curl wttr.in/boston?${OPT}
