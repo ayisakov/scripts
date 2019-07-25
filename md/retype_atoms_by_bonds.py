@@ -8,19 +8,14 @@
 import sys
 from enum import Enum
 
+# TODO: get these parameters from the arguments list
+# atom_type: (nbonds, new_type)
+retype = { 1: (1, 3), 2: (1, 4)}
+
+# TODO: add masses for the new atom types
+
 # a Kremer-Grest "atom"
 class AtomKG:
-#    def __init__(self, _id, _mol_id, _type, _x, _y, _z, _nx, _ny, _nz):
-#        self.atom_id = _id
-#        self.mol_id = _mol_id
-#        self.atom_type = _type
-#        self.x = _x
-#        self.y = _y
-#        self.z = _z
-#        self.nx = _nx
-#        self.ny = _ny
-#        self.nz = _nz
-#        self.nbonds = 0
     def __init__(self, atom_line):
         contents = atom_line.split(' ')
         num_values = len(contents)
@@ -77,60 +72,117 @@ found_atom_records = False
 
 atoms = {} # indexed by atom id
 bonds = [] # in order in which they were read
-# output lines, indexed by section
 
-data_out = { Section.preamble: [], Section.atoms: [], Section.other: [],
-             Section.bonds: [], Section.rest: []}
+
+data_out = { Section.preamble: [], Section.atoms: ["Atoms # bond", ""], Section.other: [],
+             Section.bonds: ["Bonds", ""], Section.rest: []}
 
 def copy_line(line, _section):
     data_out[_section].append(line)
 
+def find_section(line, section):
+    if line[:(len(section))] == section:
+#    if line.split(' ')[0] == section:
+        return True
+    return False
+
 section = Section.preamble
 
+retype_done = False
+def do_retype():
+    # retype the relevant atoms
+    for k in atoms.keys():
+        atom = atoms[k]
+        if atom.atom_type in retype:
+            #print("DEBUG: atom found in retype")
+            r = retype[atom.atom_type]
+            if atom.nbonds == r[0]:
+                #print("DEBUG: changing atom type")
+                atom.atom_type = r[1]
+                update_n_atom_types(atom.atom_type)
+    # store the atoms and bonds sections
+    for atom in atoms.values():
+        data_out[Section.atoms].append(str(atom))
+    #print("DEBUG: {0:d} bonds".format(len(bonds)))
+    for bond in bonds:
+        data_out[Section.bonds].append(str(bond))
+    retype_done = True
+
+n_types = 0
+def update_n_atom_types(n):
+    global n_types
+    if n > n_types:
+        n_types = n
+
 for line in sys.stdin:
+    # TODO: this check looks unnecessary
     if line == "": # EOF
         break
 
     if section == Section.preamble:
         # look for the Atoms section
-        if line.split(' ')[0] != "Atoms":
-            copy_line(line)
+        if not find_section(line, "Atoms"):
+            copy_line(line, section)
         else:
+#            #print("DEBUG: Found section atoms")
             section = Section.atoms
+            continue
 
-    else if section == Section.atoms:
+    elif section == Section.atoms:
         # populate atom records and look for the end of the section
         if line == "\n":
+#            #print("DEBUG: Found empty line in section 'Atoms'")
             if len(atoms) > 0:
                 # end of atoms section
                 section = Section.other
         else:
             # populate the atoms dictionary
+#            #print("DEBUG: Found an atom")
             atom = AtomKG(line)
             atoms[atom.atom_id] = atom
+            update_n_atom_types(atom.atom_type)
 
-    else if section == Section.other:
+    elif section == Section.other:
+#        #print("DEBUG: in section 'other'")
         # look for the Bonds section
+        if not find_section(line, "Bonds"):
+            copy_line(line, section)
+            #print("DEBUG: line is: "+line)
+        else:
+            #print("DEBUG: Found section 'Bonds'")
+            section = Section.bonds
+            continue
 
-    else if section == Section.bonds:
+    elif section == Section.bonds:
         # populate the bond records and look for the end of the section
-        # retype the relevant atoms
-        # print the atoms and bonds sections
-
+        #print("DEBUG: in section 'Bonds'; line is: "+line)
+        if line == "\n":
+            if len(bonds) > 0:
+                #print("DEBUG: end of section 'Bonds'")
+                # end of bonds section
+                section = Section.rest
+                do_retype()
+        else:
+            #print("DEBUG: Found a bond")
+            bond = Bond(line)
+            bonds.append(bond)
+            atoms[bond.atom_1].nbonds += 1
+            atoms[bond.atom_2].nbonds += 1
     else:
         # copy over each line
-        copy_line(line)
+        copy_line(line, section)
 
-    if found_atoms_section:
-        if found_atom_records:
-            if line == "\n": # done with atom records
-                found_atom_section = False
+if not retype_done:
+    do_retype()
 
-                continue
-        else:
-            # look for the first atom record
-            if line == "\n": continue
-            found_atom_records = True
-    else:
-        if line.split(' ')[0] != "Atoms":
+# Update the number of atom types in the preamble
+preamble = data_out[Section.preamble]
+for i in range(0, len(preamble) - 1):
+    l = preamble[i]
+    if "atom types" in l:
+        preamble[i] = "{0:d} atom types".format(n_types)
 
+# Print the sections in order
+for s in [Section.preamble, Section.atoms, Section.other, Section.bonds, Section.rest]:
+    for line in data_out[s]:
+        print(line.rstrip())
