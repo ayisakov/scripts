@@ -103,6 +103,7 @@ def do_retype():
     # store the atoms and bonds sections
     for atom in atoms.values():
         data_out[Section.atoms].append(str(atom))
+    data_out[Section.atoms].append("")
     #print("DEBUG: {0:d} bonds".format(len(bonds)))
     for bond in bonds:
         data_out[Section.bonds].append(str(bond))
