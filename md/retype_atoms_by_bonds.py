@@ -17,10 +17,11 @@ retype = { 1: (1, 3), 2: (1, 4)}
 # a Kremer-Grest "atom"
 class AtomKG:
     def __init__(self, atom_line):
-        contents = atom_line.split(' ')
+        contents = atom_line.split()
         num_values = len(contents)
         if num_values != 9:
-            raise Exception("An atom line is expected to have 9 values: {0:d} found.".format(num_values))
+            raise Exception("An atom line is expected to have 9 values: {0:d} found." \
+            "\nLine: {1:s}".format(num_values, atom_line))
         self.atom_id = int(contents[0])
         self.mol_id = int(contents[1])
         self.atom_type = int(contents[2])
@@ -45,7 +46,7 @@ class AtomKG:
 
 class Bond:
     def __init__(self, bond_line):
-        contents = bond_line.split(' ')
+        contents = bond_line.split()
         num_values = len(contents)
         if num_values != 4:
             raise Exception("A bond line is expected to have 4 values: {0:d} found.".format(num_values))
@@ -82,7 +83,7 @@ def copy_line(line, _section):
 
 def find_section(line, section):
     if line[:(len(section))] == section:
-#    if line.split(' ')[0] == section:
+#    if line.split()[0] == section:
         return True
     return False
 
