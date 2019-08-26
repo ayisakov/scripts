@@ -5,6 +5,7 @@
 # Convert a XYZ file with a single atom type to a LAMMPS data file using the 'bond' atom style.
 
 import sys
+import argparse
 from enum import Enum
 
 # A 'bond' atom style atom
@@ -37,11 +38,17 @@ class AtomBond:
                                                                               self.ny,
                                                                               self.nz)
 
-# TODO: get these from arguments
-atom_idx = 5761
-atom_type = 10
-mol_id = 961
-mass = 1.0
+parser = argparse.ArgumentParser()
+parser.add_argument("starting_atom_index", help="the first atom index for the wall particles (e.g. one past the last atom index in the target file)")
+parser.add_argument("atom_type", help="the atom type of the wall particles")
+parser.add_argument("mol_id", help="the molecule id of the wall particles")
+parser.add_argument("mass", help="the mass of each wall particle")
+args = parser.parse_args()
+
+atom_idx = int(args.starting_atom_index)
+atom_type = int(args.atom_type)
+mol_id = int(args.mol_id)
+mass = float(args.mass)
 
 atoms_expected = 0
 line_idx = -1
