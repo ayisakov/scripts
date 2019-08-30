@@ -6,11 +6,20 @@
 # data file
 
 import sys
+import argparse
 from enum import Enum
 
-# TODO: get these parameters from the arguments list
+parser = argparse.ArgumentParser()
+parser.add_argument("-r", "--retype", help="parameters: x1,y1,z1[;x2,y2,z2;...xn,yn,zn] change atom type x " \
+                                                    "to atom type z if atom of type x " \
+                                                    "participates in y bonds", type=str, required=True)
+args = parser.parse_args()
+retype_raw = [parms.split(',') for parms in args.retype.split(';')]
+for parms in retype_raw:
+    if len(parms) != 3:
+        raise Exception("Incorrect number of parameters for the retype argumenp")
 # atom_type: (nbonds, new_type)
-retype = { 1: (1, 3), 2: (1, 4)}
+retype = { int(parms[0]): (int(parms[1]), int(parms[2])) for parms in retype_raw }
 
 # TODO: add masses for the new atom types
 
