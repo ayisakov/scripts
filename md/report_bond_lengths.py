@@ -114,8 +114,27 @@ def calculate_distance(box, atom1, atom2):
     pos2 = np.array(fullpos(atom2))
 #    print('Debug: atom {0:d} (2) y-position = {1:.3f}'.format(atom2.atom_id, pos2[1]))
     dist = pos2 - pos1
+    def min_image(distance):
+        '''
+        If image flags are inconsistent, it may appear that some bonds are longer
+        than they are in reality. This is because one of the participating atoms
+        does not appear in the data file with the correct image flag from the point
+        of view of the bond. The real atom that actually participates in the bond in
+        this case is an image of the atom listed in the data file. The image flag
+        is set to the value in the data file to keep track of the original atoms, and
+        therefore the center of mass of the system. LAMMPS performs this same
+        procedure to correctly calculate the bond lengths in Domain::minimum_image
+        '''
+        for ax in [0, 1, 2]:
+            while np.abs(distance[ax]) > box.length(ax) / 2.:
+                if distance[ax] < 0.0:
+                    distance[ax] += box.length(ax)
+                else:
+                    distance[ax]-= box.length(ax)
+        return distance
+    min_dist = min_image(dist)
 #    print('Debug: y-distance = {0:.3f}'.format(dist[1]))
-    return np.sqrt(np.sum(np.square(dist)))
+    return np.sqrt(np.sum(np.square(min_dist)))
 
 
 n_types = 0
